@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXUS CONTROL HUB v8.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- CSS VARIABLES --- */
+        :root {
+            --bg: #050508; --card: rgba(20, 20, 25, 0.6); --nav: rgba(25, 25, 35, 0.8); 
+            --accent: #00e5ff; --text: #ffffff; --muted: #94a3b8; 
+            --border: rgba(255, 255, 255, 0.08); 
+            --green: #00ff9d; --red: #ff0055; --yellow: #ffcc00; --purple: #aa00ff;
+            --glass: blur(24px) saturate(180%);
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --gradient: linear-gradient(135deg, var(--accent), var(--purple));
+        }
+
+        /* --- ENHANCED THEMES --- */
+        [data-theme="cyberpunk"] { --bg:#050508; --accent:#00e5ff; --gradient: linear-gradient(135deg, #00e5ff, #aa00ff); }
+        [data-theme="matrix"] { --bg:#000000; --card:rgba(0, 20, 0, 0.8); --nav:rgba(0, 30, 0, 0.9); --accent:#00ff00; --green:#00ff00; --red:#008800; --gradient: linear-gradient(135deg, #00ff00, #008800); }
+        [data-theme="quantum"] { --bg:#0a0014; --card:rgba(20, 0, 40, 0.6); --nav:rgba(30, 10, 50, 0.8); --accent:#c400ff; --green:#d633ff; --red:#ff0066; --gradient: linear-gradient(135deg, #c400ff, #00ccff); }
+        [data-theme="synthwave"] { --bg:#12003d; --card:rgba(40, 0, 80, 0.6); --nav:rgba(60, 0, 100, 0.8); --accent:#ff00ff; --green:#00ffff; --red:#ff0055; --gradient: linear-gradient(135deg, #ff00ff, #00ffff); }
+        [data-theme="midnight"] { --bg:#000814; --card:rgba(10, 20, 40, 0.7); --nav:rgba(15, 25, 50, 0.9); --accent:#0066ff; --green:#00ffcc; --red:#ff3366; --gradient: linear-gradient(135deg, #0066ff, #00ffcc); }
+        [data-theme="neon"] { --bg:#000a14; --card:rgba(0, 30, 60, 0.6); --nav:rgba(0, 40, 80, 0.8); --accent:#00ffff; --green:#ffff00; --red:#ff0080; --gradient: linear-gradient(135deg, #00ffff, #ffff00); }
+        
+        /* Anime Themes */
+        [data-theme="akatsuki"] { --bg:#150000; --card:rgba(40, 0, 0, 0.7); --nav:rgba(60, 0, 0, 0.9); --accent:#ff0000; --gradient: linear-gradient(135deg, #ff0000, #ff8800); }
+        [data-theme="arcane"] { --bg:#1a0a14; --card:rgba(40, 10, 30, 0.7); --nav:rgba(60, 15, 45, 0.9); --accent:#ff3366; --green:#ffcc00; --red:#ff0066; --gradient: linear-gradient(135deg, #ff3366, #ffcc00); }
+        [data-theme="hologram"] { --bg:#000a1a; --card:rgba(0, 20, 60, 0.6); --nav:rgba(0, 30, 80, 0.8); --accent:#00ffcc; --green:#00ffaa; --red:#ff66cc; --gradient: linear-gradient(135deg, #00ffcc, #ff66cc); }
+
+        /* --- GLOBAL RESETS --- */
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 110px; overflow-x: hidden; transition: background 0.4s ease; }
+        
+        #bgCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
+        #themeOverlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100vw; height: 100vh; z-index: -1; pointer-events: none; display: flex; align-items: center; justify-content: center; opacity: 0.3; overflow: hidden; }
+
+        /* --- ENHANCED HEADER --- */
+        header { 
+            position: sticky; top: 0; z-index: 50; 
+            background: rgba(0,0,0,0.3); backdrop-filter: var(--glass);
+            border-bottom: 1px solid var(--border); padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .brand { font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand i { filter: drop-shadow(0 0 12px currentColor); transition: 0.3s; }
+        .icon-btn { 
+            width: 38px; height: 38px; border-radius: 12px; 
+            background: rgba(255,255,255,0.07); border: 1px solid var(--border); color: var(--muted);
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.12); color: var(--accent); }
+        .icon-btn:active { transform: scale(0.95); background: var(--accent); color: #000; }
+
+        /* --- LAYOUT --- */
+        .container { max-width: 720px; margin: 0 auto; padding: 20px; }
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ENHANCED CONTROLS --- */
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .search { position: relative; flex: 1; }
+        .search i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.8rem; }
+        .input-std { 
+            width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border); 
+            padding: 12px 12px 12px 40px; color: var(--text); border-radius: 12px; 
+            font-family: 'Inter', sans-serif; font-size: 0.9rem; backdrop-filter: blur(5px); transition: 0.3s;
+        }
+        .input-std:focus { border-color: var(--accent); background: rgba(0,0,0,0.35); box-shadow: 0 0 20px rgba(0,0,0,0.4); }
+        .btn-main { 
+            background: var(--gradient); color: #000; border: none; padding: 0 20px; 
+            border-radius: 12px; font-weight: 800; cursor: pointer; 
+            display: flex; align-items: center; gap: 8px; white-space: nowrap; box-shadow: 0 5px 25px rgba(0,0,0,0.5); transition: 0.2s;
+        }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+        
+        /* --- ENHANCED CHIPS --- */
+        .chips { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .chip { padding: 8px 18px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); font-size: 0.75rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .chip:hover { background: rgba(255,255,255,0.1); }
+        .chip.active { background: var(--gradient); color: #000; border-color: transparent; box-shadow: 0 0 20px var(--accent); }
+
+        /* --- ENHANCED CARDS --- */
+        .item-card { 
+            background: var(--card); border: 1px solid var(--border); 
+            border-radius: 24px; padding: 20px; margin-bottom: 12px; 
+            display: flex; flex-direction: column; gap: 12px;
+            backdrop-filter: var(--glass); 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            position: relative; overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .item-card:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
+        
+        .item-card.active-card::before { content:''; position: absolute; top:0; left:0; width:4px; height:100%; background: var(--green); box-shadow: 0 0 20px var(--green); }
+        .item-card.banned-card::before { content:''; position: absolute; top:0; left:0; width:4px; height:100%; background: var(--red); box-shadow: 0 0 20px var(--red); }
+        .item-card.expiring-card::before { content:''; position: absolute; top:0; left:0; width:4px; height:100%; background: var(--yellow); box-shadow: 0 0 20px var(--yellow); }
+        
+        .row-top { display: flex; justify-content: space-between; align-items: center; padding-left: 8px; }
+        .mono-text { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text); font-size: 0.95rem; word-break: break-all; opacity: 0.95; cursor: pointer; transition: 0.2s; }
+        .mono-text:hover { opacity: 1; color: var(--accent); }
+        .meta-row { border-top: 1px solid var(--border); padding: 12px 0 0 8px; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); align-items: center; }
+        .badge { font-weight: 800; text-transform: uppercase; padding: 4px 12px; border-radius: 10px; font-size: 0.6rem; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px; }
+        .badge.active { background: rgba(0, 255, 157, 0.15); color: var(--green); border: 1px solid rgba(0, 255, 157, 0.3); }
+        .badge.banned { background: rgba(255, 0, 85, 0.15); color: var(--red); border: 1px solid rgba(255, 0, 85, 0.3); }
+        .badge.expiring { background: rgba(255, 204, 0, 0.15); color: var(--yellow); border: 1px solid rgba(255, 204, 0, 0.3); }
+        
+        .device-info { display: flex; align-items: center; gap: 15px; }
+        .device-icon { width: 42px; height: 42px; border-radius: 14px; background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--muted); border: 1px solid var(--border); transition: 0.3s; }
+        .active-card .device-icon { color: var(--green); border-color: rgba(0,255,157,0.4); box-shadow: 0 0 20px rgba(0,255,157,0.2); }
+        .banned-card .device-icon { color: var(--red); border-color: rgba(255,0,85,0.4); box-shadow: 0 0 20px rgba(255,0,85,0.2); }
+        .expiring-card .device-icon { color: var(--yellow); border-color: rgba(255,204,0,0.4); box-shadow: 0 0 20px rgba(255,204,0,0.2); }
+        
+        .info-pill { 
+            background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border); 
+            display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; color: var(--muted);
+            font-size: 0.7rem; margin-top: 5px; transition: 0.2s;
+        }
+        .info-pill:hover { background: rgba(255,255,255,0.05); border-color: var(--accent); }
+
+        /* --- ENHANCED SWITCH --- */
+        .switch { position: relative; width: 55px; height: 30px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #222; border-radius: 30px; transition: .3s; border: 1px solid var(--border); }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background: #666; border-radius: 50%; transition: .3s; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        input:checked + .slider { background: rgba(255, 0, 85, 0.25); border-color: var(--red); }
+        input:checked + .slider:before { transform: translateX(25px); background: var(--red); box-shadow: 0 0 15px var(--red); }
+        input:not(:checked) + .slider { background: rgba(0, 255, 157, 0.25); border-color: var(--green); }
+        input:not(:checked) + .slider:before { background: var(--green); box-shadow: 0 0 15px var(--green); }
+
+        /* --- ENHANCED NAV BAR --- */
+        .nav-fixed { position: fixed; bottom: 25px; left: 0; right: 0; display: flex; justify-content: center; z-index: 99; pointer-events: none; }
+        .nav-inner { 
+            background: var(--nav); border: 1px solid var(--border); padding: 0 10px; height: 70px; border-radius: 24px; width: 90%; max-width: 450px; 
+            display: flex; justify-content: space-around; align-items: center; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8); backdrop-filter: var(--glass); pointer-events: auto; 
+        }
+        .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); font-size: 1.2rem; transition: 0.3s; cursor: pointer; height: 100%; border-radius: 12px; position: relative; }
+        .nav-btn:hover { color: #fff; transform: translateY(-2px); }
+        .nav-btn.active { color: var(--accent); transform: translateY(-3px); text-shadow: 0 0 20px var(--accent); }
+        .nav-btn.active::after { content: ''; position: absolute; bottom: 5px; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+        .nav-lbl { font-size: 0.65rem; margin-top: 4px; font-weight: 800; letter-spacing: 0.5px; opacity: 0.9; }
+
+        /* --- ENHANCED STATS --- */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; }
+        .stat-card { 
+            background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 15px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: var(--glass); transition: 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .stat-value { font-size: 2rem; font-weight: 800; margin-bottom: 5px; }
+        .stat-label { font-size: 0.6rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* --- SETUP / TOAST / MODALS --- */
+        .setup-box { text-align: center; padding: 50px 30px; border: 1px solid var(--border); border-radius: 24px; background: var(--card); margin-top: 40px; backdrop-filter: blur(20px); box-shadow: var(--shadow); animation: fadeIn 0.5s ease; }
+        .btn-block { width: 100%; padding: 16px; background: var(--gradient); color: #000; border: none; border-radius: 16px; font-weight: 800; margin-top: 15px; cursor: pointer; letter-spacing: 0.5px; font-size: 0.9rem; transition: 0.2s; box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .btn-block:hover { transform: translateY(-3px); box-shadow: 0 12px 35px rgba(0,0,0,0.4); }
+        .btn-block:active { transform: scale(0.98); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(12px); transition: 0.3s; opacity: 0; pointer-events: none; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #111; width: 90%; max-width: 380px; padding: 30px; border-radius: 24px; border: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,0.9); transform: scale(0.9); transition: 0.3s; }
+        .modal-overlay.open .modal-content { transform: scale(1); }
+        .inp-group { margin-bottom: 20px; text-align: left; }
+        .inp-label { display: block; color: var(--muted); font-size: 0.7rem; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--nav); border: 1px solid var(--accent); color: var(--text); padding: 14px 30px; border-radius: 50px; z-index: 300; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; font-weight: 700; box-shadow: 0 15px 40px rgba(0,0,0,0.6); font-size: 0.85rem; white-space: nowrap; backdrop-filter: blur(20px); }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* --- ENHANCED THEME GRID --- */
+        .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 400px; overflow-y: auto; padding: 10px; }
+        .theme-btn { 
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 18px 10px; 
+            border-radius: 16px; text-align: center; color: var(--muted); font-weight: 800; cursor: pointer; transition: 0.2s;
+        }
+        .theme-btn:hover { background: var(--gradient); color: #000; transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+        
+        /* --- ENHANCED DPMODS PANEL --- */
+        .dp-card { background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid var(--border); border-radius: 24px; padding: 30px; text-align: center; margin-top: 25px; position: relative; overflow: hidden; }
+        .dp-card::after { content: ''; position: absolute; top:0; left:0; width:100%; height:4px; background: var(--gradient); }
+        
+        /* --- BULK ACTIONS --- */
+        .bulk-actions { display: flex; gap: 10px; margin-bottom: 15px; }
+        .bulk-btn { flex: 1; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--muted); font-weight: 700; cursor: pointer; transition: 0.2s; text-align: center; font-size: 0.8rem; }
+        .bulk-btn:hover { background: var(--accent); color: #000; }
+        
+        /* --- EXPORT PANEL --- */
+        .export-panel { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+    
+    <header>
+        <div class="brand"><i class="fas fa-satellite-dish"></i> <span id="brandName">NEXUS CONTROL HUB</span></div>
+        <div style="display:flex; gap:10px">
+            <div class="icon-btn" onclick="openThemeModal()"><i class="fas fa-palette"></i></div>
+            <div class="icon-btn" onclick="openStatsModal()"><i class="fas fa-chart-bar"></i></div>
+            <div class="icon-btn" onclick="appInit(true)"><i class="fas fa-sync-alt"></i></div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="viewLoader" style="text-align: center; padding: 100px 0;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size: 3rem; color: var(--accent);"></i>
+            <p style="color: var(--muted); margin-top: 25px; font-weight: 800; letter-spacing: 3px; font-size: 0.9rem;">INITIALIZING NEXUS...</p>
+        </div>
+
+        <div id="viewSetup" class="hidden setup-box">
+            <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px auto; border: 1px solid var(--border); box-shadow: 0 0 40px var(--accent);">
+                <i class="fas fa-database" style="font-size: 2rem; color: var(--accent);"></i>
+            </div>
+            <h2 style="margin: 0 0 15px 0; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Database Connection</h2>
+            <div class="inp-group"><label class="inp-label">FIREBASE DATABASE URL</label><input type="text" class="input-std" id="inputDbUrl" placeholder="https://your-project.firebaseio.com" style="padding-left: 15px;"></div>
+            <button class="btn-block" onclick="saveUrlAndConnect()"><i class="fas fa-plug"></i> ESTABLISH CONNECTION</button>
+        </div>
+
+        <div id="viewDashboard" class="hidden fade-in">
+            <!-- ENHANCED STATS -->
+            <div class="stats-grid" id="statsPanel">
+                <div class="stat-card" style="border-color: rgba(0,229,255,0.3);">
+                    <span class="stat-value" id="statKeys">0</span>
+                    <span class="stat-label">Active Keys</span>
+                </div>
+                <div class="stat-card" style="border-color: rgba(0,255,157,0.3);">
+                    <span class="stat-value" id="statDevs">0</span>
+                    <span class="stat-label">Devices</span>
+                </div>
+                <div class="stat-card" style="border-color: rgba(255,204,0,0.3);">
+                    <span class="stat-value" id="statExpiring">0</span>
+                    <span class="stat-label">Expiring Soon</span>
+                </div>
+                <div class="stat-card" style="border-color: rgba(170,0,255,0.3);">
+                    <span class="stat-value" id="statBanned">0</span>
+                    <span class="stat-label">Banned</span>
+                </div>
+            </div>
+
+            <!-- KEYS TAB -->
+            <div id="tabKeys">
+                <div class="controls">
+                    <div class="search"><i class="fas fa-search"></i><input type="text" class="input-std" id="searchKeys" placeholder="Search Keys..." onkeyup="renderKeys()"></div>
+                    <button class="btn-main" onclick="openModal('modalKey')"><i class="fas fa-plus"></i> GENERATE</button>
+                </div>
+                <div class="bulk-actions">
+                    <div class="bulk-btn" onclick="exportKeys('json')"><i class="fas fa-file-export"></i> EXPORT JSON</div>
+                    <div class="bulk-btn" onclick="exportKeys('csv')"><i class="fas fa-file-csv"></i> EXPORT CSV</div>
+                    <div class="bulk-btn" onclick="bulkDeleteKeys()"><i class="fas fa-trash"></i> BULK DELETE</div>
+                </div>
+                <div class="chips">
+                    <div class="chip active" onclick="setKeyFilter('all', this)">All Keys</div>
+                    <div class="chip" onclick="setKeyFilter('recent', this)">Recent</div>
+                    <div class="chip" onclick="setKeyFilter('unused', this)">Unused</div>
+                </div>
+                <div id="listKeys"></div>
+            </div>
+
+            <!-- DEVICES TAB -->
+            <div id="tabDevices" class="hidden">
+                <div class="controls">
+                    <div class="search"><i class="fas fa-search"></i><input type="text" class="input-std" id="searchDevs" placeholder="Search Device ID..." onkeyup="renderDevices()"></div>
+                </div>
+                <div class="bulk-actions">
+                    <div class="bulk-btn" onclick="exportDevices()"><i class="fas fa-download"></i> EXPORT DATA</div>
+                    <div class="bulk-btn" onclick="bulkBan()"><i class="fas fa-ban"></i> BULK BAN</div>
+                    <div class="bulk-btn" onclick="cleanupExpired()"><i class="fas fa-broom"></i> CLEANUP</div>
+                </div>
+                <div class="chips">
+                    <div class="chip active" onclick="setDevFilter('all', this)">All Devices</div>
+                    <div class="chip" onclick="setDevFilter('allowed', this)">Allowed Only</div>
+                    <div class="chip" onclick="setDevFilter('banned', this)">Banned Only</div>
+                    <div class="chip" onclick="setDevFilter('expiring', this)">Expiring Soon</div>
+                </div>
+                <div id="listDevices"></div>
+            </div>
+
+            <!-- CONFIG TAB -->
+            <div id="tabConfig" class="hidden">
+                <h3 style="margin-bottom:25px; color:var(--text); font-weight:800; display:flex; align-items:center; gap:12px; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    <i class="fas fa-cogs"></i> System Configuration
+                </h3>
+                
+                <div class="item-card">
+                    <h4 style="margin:0 0 15px 0; color:var(--accent); font-size:0.9rem; border-bottom:1px solid var(--border); padding-bottom:12px; text-transform:uppercase; letter-spacing:1px;">APP SETTINGS</h4>
+                    <div class="inp-group"><label class="inp-label">APP TITLE</label><input type="text" class="input-std" id="confTitle" style="padding-left:15px"></div>
+                    <div class="inp-group"><label class="inp-label">SUBTITLE</label><input type="text" class="input-std" id="confSub" style="padding-left:15px"></div>
+                    <div class="inp-group"><label class="inp-label">APP VERSION</label><input type="number" class="input-std" id="confVer" style="padding-left:15px" placeholder="1"></div>
+                    <div class="inp-group"><label class="inp-label">UPDATE URL</label><input type="text" class="input-std" id="confUpdateUrl" style="padding-left:15px" placeholder="https://..."></div>
+                    <div class="inp-group"><label class="inp-label">ADMIN CONTACT URL</label><input type="text" class="input-std" id="confUrl" style="padding-left:15px"></div>
+                </div>
+
+                <div class="item-card">
+                    <h4 style="margin:0 0 15px 0; color:var(--accent); font-size:0.9rem; border-bottom:1px solid var(--border); padding-bottom:12px; text-transform:uppercase; letter-spacing:1px;">SECURITY SETTINGS</h4>
+                    <div class="inp-group"><label class="inp-label">MAX DEVICES PER KEY</label><input type="number" class="input-std" id="confMaxDevices" style="padding-left:15px" placeholder="Unlimited" value="0"></div>
+                    <div class="inp-group"><label class="inp-label">AUTO BAN ON MULTI-USE</label><label class="switch" style="display:block; margin-top:10px;"><input type="checkbox" id="confAutoBan"><span class="slider"></span></label></div>
+                    <div class="inp-group"><label class="inp-label">REQUIRE DEVICE VERIFICATION</label><label class="switch" style="display:block; margin-top:10px;"><input type="checkbox" id="confRequireVerify"><span class="slider"></span></label></div>
+                </div>
+
+                <div class="item-card">
+                    <h4 style="margin:0 0 15px 0; color:var(--accent); font-size:0.9rem; border-bottom:1px solid var(--border); padding-bottom:12px; text-transform:uppercase; letter-spacing:1px;">API INTEGRATION</h4>
+                    <div class="inp-group"><label class="inp-label">API BASE URL</label><input type="text" class="input-std" id="confApiUrl" placeholder="https://api.example.com" style="padding-left:15px"></div>
+                    <div class="inp-group"><label class="inp-label">API TOKEN</label><input type="text" class="input-std" id="confApiToken" placeholder="sk_live_..." style="padding-left:15px"></div>
+                    <div class="inp-group"><label class="inp-label">WEBHOOK URL</label><input type="text" class="input-std" id="confWebhook" placeholder="https://discord.com/api/webhooks/..." style="padding-left:15px"></div>
+                </div>
+
+                <div class="dp-card" id="aboutPanel">
+                    <i class="fas fa-code-branch" style="font-size:2.5rem; color:var(--accent); margin-bottom:15px; filter: drop-shadow(0 0 15px var(--accent));"></i>
+                    <h4 style="margin:0; font-size:1.3rem; color:var(--text); font-weight:800;" id="panelTitle">NEXUS CONTROL HUB</h4>
+                    <p style="color:var(--muted); font-size:0.8rem; margin-top:10px;">Enterprise-grade access control system</p>
+                    <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:16px; border:1px solid var(--border); display:inline-block; margin-top:20px; min-width: 250px;">
+                        <span style="font-size:0.7rem; color:var(--muted); font-weight:800; letter-spacing:1px; text-transform:uppercase;">Developed By</span><br>
+                        <span style="font-size:1.5rem; font-weight:800; color:var(--accent); text-shadow: 0 0 20px var(--accent); letter-spacing:-0.5px;" id="panelDev">NEXUS TEAM</span>
+                    </div>
+                </div>
+
+                <div class="item-card" style="border-color: rgba(255,0,85,0.4); margin-top: 25px; background: rgba(255,0,85,0.05);">
+                    <h4 style="margin:0 0 15px 0; color:var(--red); text-transform:uppercase; letter-spacing:1px;">DANGER ZONE</h4>
+                    <button class="btn-block" style="background: rgba(255,0,85,0.2); color: var(--red); border: 1px solid var(--red); margin-top:10px;" onclick="hardReset()"><i class="fas fa-unlink"></i> DISCONNECT DATABASE</button>
+                    <button class="btn-block" style="background: rgba(255,0,85,0.2); color: var(--red); border: 1px solid var(--red); margin-top:10px;" onclick="purgeAllData()"><i class="fas fa-skull-crossbones"></i> PURGE ALL DATA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modalKey" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Generate Keys</h3>
+            <div class="inp-group"><label class="inp-label">PREFIX</label><input type="text" class="input-std" id="keyPrefix" value="NEXUS" style="padding-left:15px"></div>
+            <div class="inp-group"><label class="inp-label">QUANTITY</label><input type="number" class="input-std" id="keyQty" value="5" style="padding-left:15px" min="1" max="100"></div>
+            <div class="inp-group"><label class="inp-label">KEY LENGTH</label><input type="number" class="input-std" id="keyLength" value="12" style="padding-left:15px" min="6" max="32"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="btn-block" style="margin-top:0" onclick="generateKeys()"><i class="fas fa-key"></i> GENERATE</button>
+                <button class="btn-block" style="margin-top:0; background:transparent; border:1px solid var(--border); color:var(--muted)" onclick="closeModal('modalKey')"><i class="fas fa-times"></i> CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEdit" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Edit Key</h3>
+            <input type="hidden" id="editOld">
+            <div class="inp-group"><label class="inp-label">KEY STRING</label><input type="text" class="input-std" id="editNew" style="padding-left:15px"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="btn-block" style="margin-top:0" onclick="saveKeyEdit()"><i class="fas fa-save"></i> SAVE</button>
+                <button class="btn-block" style="margin-top:0; background:transparent; border:1px solid var(--border); color:var(--muted)" onclick="closeModal('modalEdit')"><i class="fas fa-times"></i> CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEditDevice" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Edit Device</h3>
+            <input type="hidden" id="editDeviceOld">
+            <input type="hidden" id="editDeviceType">
+            <div class="inp-group"><label class="inp-label">DEVICE ID</label><input type="text" class="input-std" id="editDeviceNew" style="padding-left:15px"></div>
+            <div class="inp-group"><label class="inp-label">LINKED KEY</label><input type="text" class="input-std" id="editDeviceKey" style="padding-left:15px"></div>
+            <div class="inp-group"><label class="inp-label">EXPIRY DATE</label><input type="datetime-local" class="input-std" id="editDeviceExpiry" style="padding-left:15px"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="btn-block" style="margin-top:0" onclick="saveDeviceEdit()"><i class="fas fa-save"></i> UPDATE</button>
+                <button class="btn-block" style="margin-top:0; background:transparent; border:1px solid var(--border); color:var(--muted)" onclick="closeModal('modalEditDevice')"><i class="fas fa-times"></i> CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalThemes" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Select Theme</h3>
+            <div class="theme-grid" id="themeList"></div>
+            <button class="btn-block" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--muted)" onclick="closeModal('modalThemes')"><i class="fas fa-times"></i> CLOSE</button>
+        </div>
+    </div>
+
+    <div id="modalStats" class="modal-overlay">
+        <div class="modal-content" style="max-width:500px;">
+            <h3 style="margin-top:0; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">System Analytics</h3>
+            <div id="statsContent"></div>
+            <button class="btn-block" style="margin-top:15px; background:transparent; border:1px solid var(--border); color:var(--muted)" onclick="closeModal('modalStats')"><i class="fas fa-times"></i> CLOSE</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"><i class="fas fa-check-circle" style="color:var(--green)"></i><span>Action Successful</span></div>
+
+    <!-- ENHANCED NAV BAR -->
+    <div class="nav-fixed">
+        <div class="nav-inner">
+            <div class="nav-btn active" id="navKey" onclick="switchTab('keys')"><i class="fas fa-key"></i><span class="nav-lbl">KEYS</span></div>
+            <div class="nav-btn" id="navDev" onclick="switchTab('devices')"><i class="fas fa-server"></i><span class="nav-lbl">DEVICES</span></div>
+            <div class="nav-btn" id="navConf" onclick="switchTab('config')"><i class="fas fa-sliders-h"></i><span class="nav-lbl">SYSTEM</span></div>
+            <div class="nav-btn" onclick="openQuickActions()"><i class="fas fa-bolt"></i><span class="nav-lbl">QUICK</span></div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. ENHANCED CONFIG & INIT
+        // ==========================================
+        let dbUrl = localStorage.getItem("gateway_db_url") || "";
+        let dbData = null;
+        let devFilter = 'all';
+        let keyFilter = 'all';
+        let themes = ['cyberpunk', 'quantum', 'synthwave', 'midnight', 'neon', 'akatsuki', 'arcane', 'hologram', 'matrix'];
+        let curTheme = localStorage.getItem("gateway_theme") || "cyberpunk";
+
+        // ENHANCED DEFAULT DATA
+        const DEFAULT_DATA = { 
+            "Config": { 
+                "Title": "NEXUS CONTROL HUB", 
+                "Subtitle": "v8.1 // ENTERPRISE EDITION", 
+                "AdminUrl": "", 
+                "UpdateUrl": "",
+                "AppVersion": 1, 
+                "KeyDurationHours": 168, // 7 days default
+                "MaxDevicesPerKey": 0,
+                "AutoBanMultiUse": false,
+                "RequireDeviceVerify": false,
+                "Api": { "BaseUrl": "", "Token": "", "Webhook": "" },
+                "Texts": { 
+                    "BtnAdmin": "SUPPORT PORTAL", 
+                    "BtnKey": "GET ACCESS KEY", 
+                    "BtnLogin": "ACTIVATE SYSTEM", 
+                    "Hint": "ENTER LICENCE KEY" 
+                }
+            }, 
+            "BannedDevices": {}, 
+            "ActivatedUsers": {}, 
+            "ValidKeys": {},
+            "SystemLogs": [],
+            "KeyUsage": {}
+        };
+
+        // ENHANCED ANIMATION SYSTEM
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let animationId;
+        let systemStats = {
+            totalKeys: 0,
+            activeDevices: 0,
+            bannedDevices: 0,
+            expiringSoon: 0,
+            dailyActivations: 0,
+            peakUsage: 0
+        };
+
+        function initDecryption() {
+            try {
+                document.getElementById('brandName').innerText = "NEXUS CONTROL HUB";
+                document.getElementById('panelTitle').innerText = "NEXUS CONTROL HUB";
+                document.getElementById('panelDev').innerText = "NEXUS TEAM";
+            } catch(e) {}
+        }
+
+        async function appInit(isManual = false) {
+            initDecryption();
+            document.documentElement.setAttribute('data-theme', curTheme);
+            setAnimation(curTheme);
+
+            document.getElementById('viewLoader').classList.remove('hidden');
+            document.getElementById('viewSetup').classList.add('hidden');
+            document.getElementById('viewDashboard').classList.add('hidden');
+            document.querySelector('.nav-fixed').classList.add('hidden');
+
+            if (!dbUrl) {
+                setTimeout(() => {
+                    document.getElementById('viewLoader').classList.add('hidden');
+                    document.getElementById('viewSetup').classList.remove('hidden');
+                }, 800);
+                return;
+            }
+
+            const finalUrl = sanitizeUrl(dbUrl);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            try {
+                const response = await fetch(finalUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (!response.ok) throw new Error("Connection failed");
+                let data = await response.json();
+
+                if (!data || Object.keys(data).length === 0) {
+                    await fetch(finalUrl, { method: 'PUT', body: JSON.stringify(DEFAULT_DATA) });
+                    data = DEFAULT_DATA;
+                }
+
+                dbData = data;
+                ensureDataStructure();
+                calculateStats();
+                renderAll();
+
+                document.getElementById('viewLoader').classList.add('hidden');
+                document.getElementById('viewDashboard').classList.remove('hidden');
+                document.querySelector('.nav-fixed').classList.remove('hidden');
+                
+                if(isManual) showToast("System Refreshed");
+                logSystemEvent("System Initialized");
+
+            } catch (err) {
+                document.getElementById('viewLoader').classList.add('hidden');
+                document.getElementById('viewSetup').classList.remove('hidden');
+                showToast("Connection Error: " + err.message);
+            }
+        }
+
+        function saveUrlAndConnect() {
+            let inp = document.getElementById('inputDbUrl').value.trim();
+            if(!inp) return showToast("Invalid URL");
+            if(!inp.startsWith("http")) inp = "https://" + inp;
+            if(!inp.includes("firebaseio.com")) inp += ".firebaseio.com";
+            localStorage.setItem("gateway_db_url", inp);
+            dbUrl = inp;
+            appInit();
+        }
+
+        function sanitizeUrl(url) { return url.endsWith("/") ? url + ".json" : url + "/.json"; }
+
+        function ensureDataStructure() {
+            if(!dbData.ValidKeys) dbData.ValidKeys = {};
+            if(!dbData.ActivatedUsers) dbData.ActivatedUsers = {};
+            if(!dbData.BannedDevices) dbData.BannedDevices = {};
+            if(!dbData.SystemLogs) dbData.SystemLogs = [];
+            if(!dbData.KeyUsage) dbData.KeyUsage = {};
+            if(!dbData.Config) dbData.Config = DEFAULT_DATA.Config;
+            if(!dbData.Config.Api) dbData.Config.Api = DEFAULT_DATA.Config.Api;
+            if(!dbData.Config.Texts) dbData.Config.Texts = DEFAULT_DATA.Config.Texts;
+        }
+
+        async function syncDB() {
+            try {
+                await fetch(sanitizeUrl(dbUrl), { method: 'PUT', body: JSON.stringify(dbData) });
+                calculateStats();
+                showToast("Database Synced");
+                renderAll();
+            } catch (e) { 
+                showToast("Save Failed: " + e.message);
+                console.error("Sync Error:", e);
+            }
+        }
+
+        function calculateStats() {
+            systemStats.totalKeys = Object.keys(dbData.ValidKeys).length;
+            systemStats.activeDevices = Object.keys(dbData.ActivatedUsers).length;
+            systemStats.bannedDevices = Object.keys(dbData.BannedDevices).length;
+            
+            // Calculate expiring devices
+            let expiringCount = 0;
+            const now = new Date();
+            const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+            
+            Object.values(dbData.ActivatedUsers).forEach(device => {
+                if (typeof device === 'object' && device.expiry) {
+                    const expiryDate = new Date(device.expiry);
+                    if (expiryDate < twoDaysFromNow && expiryDate > now) {
+                        expiringCount++;
+                    }
+                }
+            });
+            systemStats.expiringSoon = expiringCount;
+            
+            // Update UI
+            document.getElementById('statKeys').innerText = systemStats.totalKeys;
+            document.getElementById('statDevs').innerText = systemStats.activeDevices;
+            document.getElementById('statBanned').innerText = systemStats.bannedDevices;
+            document.getElementById('statExpiring').innerText = systemStats.expiringSoon;
+        }
+
+        function logSystemEvent(event) {
+            const log = {
+                timestamp: new Date().toISOString(),
+                event: event,
+                userAgent: navigator.userAgent
+            };
+            dbData.SystemLogs.unshift(log);
+            if (dbData.SystemLogs.length > 100) dbData.SystemLogs.pop();
+            syncDB();
+        }
+
+        // ==========================================
+        // 2. ENHANCED RENDERERS
+        // ==========================================
+        function renderAll() {
+            renderKeys();
+            renderDevices();
+            calculateStats();
+            
+            // Populate config fields
+            const config = dbData.Config;
+            document.getElementById('confTitle').value = config.Title || "";
+            document.getElementById('confSub').value = config.Subtitle || "";
+            document.getElementById('confUrl').value = config.AdminUrl || "";
+            document.getElementById('confVer').value = config.AppVersion || 1;
+            document.getElementById('confUpdateUrl').value = config.UpdateUrl || "";
+            document.getElementById('confDuration').value = config.KeyDurationHours || 168;
+            document.getElementById('confMaxDevices').value = config.MaxDevicesPerKey || 0;
+            document.getElementById('confAutoBan').checked = config.AutoBanMultiUse || false;
+            document.getElementById('confRequireVerify').checked = config.RequireDeviceVerify || false;
+
+            document.getElementById('confBtnAdmin').value = config.Texts.BtnAdmin || "";
+            document.getElementById('confBtnKey').value = config.Texts.BtnKey || "";
+            document.getElementById('confBtnLogin').value = config.Texts.BtnLogin || "";
+            document.getElementById('confHint').value = config.Texts.Hint || "";
+
+            document.getElementById('confApiUrl').value = config.Api.BaseUrl || "";
+            document.getElementById('confApiToken').value = config.Api.Token || "";
+            document.getElementById('confWebhook').value = config.Api.Webhook || "";
+        }
+
+        function renderKeys() {
+            const list = document.getElementById('listKeys');
+            const search = document.getElementById('searchKeys').value.toLowerCase();
+            list.innerHTML = "";
+            
+            let keys = Object.keys(dbData.ValidKeys);
+            
+            // Apply filters
+            if (keyFilter === 'recent') {
+                keys = keys.sort((a, b) => {
+                    return new Date(dbData.ValidKeys[b]) - new Date(dbData.ValidKeys[a]);
+                }).slice(0, 50);
+            } else if (keyFilter === 'unused') {
+                keys = keys.filter(key => {
+                    // Check if key is used
+                    const used = Object.values(dbData.ActivatedUsers).some(device => 
+                        typeof device === 'object' ? device.Key === key : false
+                    );
+                    return !used;
+                });
+            }
+            
+            keys.reverse().forEach(key => {
+                if (search && !key.toLowerCase().includes(search)) return;
+                
+                const created = new Date(dbData.ValidKeys[key]);
+                const isUsed = Object.values(dbData.ActivatedUsers).some(device => 
+                    typeof device === 'object' ? device.Key === key : false
+                );
+                
+                list.innerHTML += `
+                <div class="item-card active-card">
+                    <div class="row-top">
+                        <span class="mono-text" onclick="copy('${key}')" title="Click to copy">${key}</span>
+                        <div style="display:flex; gap:8px">
+                            <div class="icon-btn" style="width:32px; height:32px;" onclick="editKey('${key}')" title="Edit"><i class="fas fa-pen"></i></div>
+                            <div class="icon-btn" style="width:32px; height:32px; border-color:var(--red); color:var(--red);" onclick="delKey('${key}')" title="Delete"><i class="fas fa-trash"></i></div>
+                        </div>
+                    </div>
+                    <div class="meta-row">
+                        <span class="badge ${isUsed ? 'active' : ''}">${isUsed ? 'In Use' : 'Available'}</span>
+                        <span style="font-size:0.7rem; color:var(--muted);">Created: ${created.toLocaleDateString()}</span>
+                    </div>
+                </div>`;
+            });
+            
+            if(list.innerHTML === "") list.innerHTML = `
+                <div style="text-align:center; padding:50px; color:var(--muted);">
+                    <i class="fas fa-key" style="font-size:2rem; margin-bottom:15px; opacity:0.5;"></i>
+                    <p>No keys found</p>
+                </div>`;
+        }
+
+        function renderDevices() {
+            const list = document.getElementById('listDevices');
+            const search = document.getElementById('searchDevs').value.toLowerCase();
+            list.innerHTML = "";
+            
+            const allDevs = [...new Set([...Object.keys(dbData.ActivatedUsers), ...Object.keys(dbData.BannedDevices)])];
+            const now = new Date();
+            
+            allDevs.forEach(dev => {
+                if(!dev) return;
+                if(search && !dev.toLowerCase().includes(search)) return;
+                
+                const isBanned = dbData.BannedDevices[dev] !== undefined;
+                if (devFilter === 'allowed' && isBanned) return;
+                if (devFilter === 'banned' && !isBanned) return;
+                
+                let devData = isBanned ? dbData.BannedDevices[dev] : dbData.ActivatedUsers[dev];
+                let expiry = "N/A";
+                let keyUsed = "Unknown";
+                let expiryDate = null;
+                let isExpiring = false;
+                
+                if(typeof devData === 'object') {
+                    expiry = devData.ExpiryReadable || "N/A";
+                    keyUsed = devData.Key || "N/A";
+                    if (devData.expiry) {
+                        expiryDate = new Date(devData.expiry);
+                        const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+                        isExpiring = expiryDate < twoDaysFromNow && expiryDate > now;
+                    }
+                } else {
+                    expiry = devData;
+                }
+                
+                if (devFilter === 'expiring' && !isExpiring && !isBanned) return;
+                
+                const statusClass = isBanned ? 'banned-card' : (isExpiring ? 'expiring-card' : 'active-card');
+                const statusText = isBanned ? 'BANNED' : (isExpiring ? 'EXPIRING' : 'AUTHORIZED');
+                const badgeClass = isBanned ? 'banned' : (isExpiring ? 'expiring' : 'active');
+                const icon = isBanned ? 'fa-ban' : (isExpiring ? 'fa-clock' : 'fa-mobile-alt');
+                
+                list.innerHTML += `
+                <div class="item-card ${statusClass}">
+                    <div class="row-top" style="padding:0">
+                        <div class="device-info">
+                            <div class="device-icon"><i class="fas ${icon}"></i></div>
+                            <div style="display:flex; flex-direction:column;">
+                                <span class="mono-text" style="font-size:0.85rem;" onclick="copy('${dev}')" title="Click to copy">${dev}</span>
+                                <span style="font-size:0.65rem; color:var(--muted); font-weight:600; margin-top:2px;">ID: ${dev.substring(0,12)}</span>
+                            </div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" ${isBanned ? 'checked' : ''} onchange="toggleBan('${dev}')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div style="display:flex; gap:5px; flex-wrap:wrap; margin-top:8px;">
+                         <div class="info-pill" title="Key Used"><i class="fas fa-key"></i> ${keyUsed}</div>
+                         <div class="info-pill" title="Expiry"><i class="far fa-clock"></i> ${expiry}</div>
+                         ${isExpiring ? '<div class="info-pill" style="color:var(--yellow); border-color:var(--yellow);"><i class="fas fa-exclamation-triangle"></i> Expiring Soon</div>' : ''}
+                    </div>
+
+                    <div class="meta-row" style="margin-top:5px;">
+                        <span class="badge ${badgeClass}"><i class="fas ${icon}"></i> ${statusText}</span>
+                        <div style="display:flex; gap:8px;">
+                            <div class="icon-btn" style="width:28px; height:28px; border:none; background:transparent;" onclick="editDevice('${dev}', ${isBanned})" title="Edit">
+                                <i class="fas fa-pen"></i>
+                            </div>
+                            <div class="icon-btn" style="width:28px; height:28px; border:none; background:transparent; color:var(--red);" onclick="delDevice('${dev}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            if(list.innerHTML === "") list.innerHTML = `
+                <div style="text-align:center; padding:60px; color:var(--muted);">
+                    <i class="fas fa-mobile-alt" style="font-size:2rem; margin-bottom:15px; opacity:0.5;"></i>
+                    <p>No devices found</p>
+                </div>`;
+        }
+
+        // ==========================================
+        // 3. ENHANCED ACTIONS
+        // ==========================================
+        function generateKeys() {
+            const qty = parseInt(document.getElementById('keyQty').value) || 1;
+            const prefix = document.getElementById('keyPrefix').value.toUpperCase().trim();
+            const length = parseInt(document.getElementById('keyLength').value) || 12;
+            
+            for(let i = 0; i < qty; i++) {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let key = '';
+                for(let j = 0; j < length; j++) {
+                    key += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                
+                const finalKey = prefix ? `${prefix}-${key}` : key;
+                dbData.ValidKeys[finalKey] = new Date().toISOString();
+                dbData.KeyUsage[finalKey] = { created: new Date().toISOString(), uses: 0 };
+            }
+            
+            closeModal('modalKey');
+            syncDB();
+            showToast(`Generated ${qty} keys`);
+            logSystemEvent(`Generated ${qty} keys with prefix: ${prefix || 'None'}`);
+        }
+
+        function exportKeys(format) {
+            const keys = Object.keys(dbData.ValidKeys);
+            let content, mime, filename;
+            
+            if (format === 'csv') {
+                content = "Key,Created\n" + keys.map(k => `"${k}","${dbData.ValidKeys[k]}"`).join("\n");
+                mime = "text/csv";
+                filename = "keys_export.csv";
+            } else {
+                content = JSON.stringify(dbData.ValidKeys, null, 2);
+                mime = "application/json";
+                filename = "keys_export.json";
+            }
+            
+            const blob = new Blob([content], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast(`Exported ${keys.length} keys as ${format.toUpperCase()}`);
+        }
+
+        function exportDevices() {
+            const devices = {
+                active: dbData.ActivatedUsers,
+                banned: dbData.BannedDevices,
+                exported: new Date().toISOString()
+            };
+            
+            const content = JSON.stringify(devices, null, 2);
+            const blob = new Blob([content], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `devices_export_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast("Devices exported successfully");
+        }
+
+        function bulkDeleteKeys() {
+            if(confirm("Delete ALL keys? This cannot be undone!")) {
+                dbData.ValidKeys = {};
+                dbData.KeyUsage = {};
+                syncDB();
+                showToast("All keys deleted");
+                logSystemEvent("Bulk key deletion performed");
+            }
+        }
+
+        function bulkBan() {
+            if(confirm("Ban ALL active devices?")) {
+                Object.keys(dbData.ActivatedUsers).forEach(dev => {
+                    dbData.BannedDevices[dev] = dbData.ActivatedUsers[dev];
+                });
+                dbData.ActivatedUsers = {};
+                syncDB();
+                showToast("All devices banned");
+                logSystemEvent("Bulk ban performed");
+            }
+        }
+
+        function cleanupExpired() {
+            const now = new Date();
+            let cleaned = 0;
+            
+            Object.keys(dbData.ActivatedUsers).forEach(dev => {
+                const device = dbData.ActivatedUsers[dev];
+                if (typeof device === 'object' && device.expiry) {
+                    const expiry = new Date(device.expiry);
+                    if (expiry < now) {
+                        delete dbData.ActivatedUsers[dev];
+                        cleaned++;
+                    }
+                }
+            });
+            
+            if (cleaned > 0) {
+                syncDB();
+                showToast(`Cleaned ${cleaned} expired devices`);
+                logSystemEvent(`Cleaned ${cleaned} expired devices`);
+            } else {
+                showToast("No expired devices found");
+            }
+        }
+
+        function saveConfig() {
+            const config = dbData.Config;
+            config.Title = document.getElementById('confTitle').value;
+            config.Subtitle = document.getElementById('confSub').value;
+            config.AdminUrl = document.getElementById('confUrl').value;
+            config.AppVersion = parseInt(document.getElementById('confVer').value) || 1;
+            config.UpdateUrl = document.getElementById('confUpdateUrl').value;
+            config.KeyDurationHours = parseInt(document.getElementById('confDuration').value) || 168;
+            config.MaxDevicesPerKey = parseInt(document.getElementById('confMaxDevices').value) || 0;
+            config.AutoBanMultiUse = document.getElementById('confAutoBan').checked;
+            config.RequireDeviceVerify = document.getElementById('confRequireVerify').checked;
+            
+            config.Texts.BtnAdmin = document.getElementById('confBtnAdmin').value;
+            config.Texts.BtnKey = document.getElementById('confBtnKey').value;
+            config.Texts.BtnLogin = document.getElementById('confBtnLogin').value;
+            config.Texts.Hint = document.getElementById('confHint').value;
+
+            config.Api.BaseUrl = document.getElementById('confApiUrl').value;
+            config.Api.Token = document.getElementById('confApiToken').value;
+            config.Api.Webhook = document.getElementById('confWebhook').value;
+            
+            syncDB();
+            showToast("Configuration Saved");
+            logSystemEvent("Configuration updated");
+        }
+
+        // ==========================================
+        // 4. ENHANCED UI FUNCTIONS
+        // ==========================================
+        function showToast(msg, type = "success") {
+            const t = document.getElementById('toast');
+            const icon = t.querySelector('i');
+            
+            switch(type) {
+                case "error":
+                    icon.className = "fas fa-exclamation-circle";
+                    icon.style.color = "var(--red)";
+                    break;
+                case "warning":
+                    icon.className = "fas fa-exclamation-triangle";
+                    icon.style.color = "var(--yellow)";
+                    break;
+                default:
+                    icon.className = "fas fa-check-circle";
+                    icon.style.color = "var(--green)";
+            }
+            
+            t.querySelector('span').innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function copy(txt) { 
+            navigator.clipboard.writeText(txt).then(() => showToast("Copied to clipboard"));
+        }
+
+        function openModal(id) { 
+            document.getElementById(id).classList.add('open'); 
+        }
+
+        function closeModal(id) { 
+            document.getElementById(id).classList.remove('open'); 
+        }
+
+        function openQuickActions() {
+            const actions = [
+                { icon: 'fa-sync', label: 'Refresh Data', action: () => appInit(true) },
+                { icon: 'fa-download', label: 'Export All', action: () => exportDevices() },
+                { icon: 'fa-trash', label: 'Clean Expired', action: cleanupExpired },
+                { icon: 'fa-ban', label: 'Ban All', action: bulkBan },
+                { icon: 'fa-key', label: 'Gen 10 Keys', action: () => { document.getElementById('keyQty').value = 10; openModal('modalKey'); } }
+            ];
+            
+            const quickModal = document.createElement('div');
+            quickModal.className = 'modal-overlay open';
+            quickModal.innerHTML = `
+                <div class="modal-content">
+                    <h3 style="margin-top:0; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Quick Actions</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;">
+                        ${actions.map(a => `
+                            <div class="theme-btn" onclick="${a.action.toString().replace('()', '')}; this.closest('.modal-overlay').remove()">
+                                <i class="fas ${a.icon}"></i><br>${a.label}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn-block" onclick="this.closest('.modal-overlay').remove()">CLOSE</button>
+                </div>
+            `;
+            
+            document.body.appendChild(quickModal);
+            quickModal.onclick = function(e) {
+                if (e.target === this) this.remove();
+            };
+        }
+
+        function openStatsModal() {
+            let statsHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+                    <div class="stat-card">
+                        <span class="stat-value">${systemStats.totalKeys}</span>
+                        <span class="stat-label">Total Keys</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">${systemStats.activeDevices}</span>
+                        <span class="stat-label">Active Devices</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">${systemStats.bannedDevices}</span>
+                        <span class="stat-label">Banned Devices</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value">${systemStats.expiringSoon}</span>
+                        <span class="stat-label">Expiring Soon</span>
+                    </div>
+                </div>
+                <div class="item-card">
+                    <h4 style="margin:0 0 15px 0; color:var(--accent);">System Logs (Recent 5)</h4>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        ${dbData.SystemLogs.slice(0, 5).map(log => `
+                            <div style="padding: 8px; border-bottom: 1px solid var(--border); font-size: 0.8rem;">
+                                <div style="color: var(--accent);">${new Date(log.timestamp).toLocaleString()}</div>
+                                <div>${log.event}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('statsContent').innerHTML = statsHTML;
+            openModal('modalStats');
+        }
+
+        function purgeAllData() {
+            if(confirm("⚠️ DANGER: This will delete ALL data including keys, devices, and logs! This action cannot be undone. Type 'PURGE' to confirm.")) {
+                const confirmation = prompt("Type 'PURGE' to confirm:");
+                if (confirmation === 'PURGE') {
+                    dbData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                    syncDB();
+                    showToast("All data purged", "error");
+                    logSystemEvent("COMPLETE DATA PURGE INITIATED");
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. ENHANCED ANIMATIONS
+        // ==========================================
+        function setAnimation(theme) {
+            if(animationId) cancelAnimationFrame(animationId);
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            switch(theme) {
+                case 'matrix': initMatrix(); break;
+                case 'quantum': initQuantum(); break;
+                case 'synthwave': initSynthwave(); break;
+                case 'hologram': initHologram(); break;
+                default: initParticles(theme);
+            }
+        }
+
+        function initParticles(theme) {
+            particles = [];
+            const color = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+            for(let i = 0; i < 80; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    v: Math.random() * 0.5 + 0.1,
+                    s: Math.random() * 3 + 1,
+                    o: Math.random() * 0.5 + 0.3
+                });
+            }
+            
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = color;
+                
+                particles.forEach(p => {
+                    ctx.globalAlpha = p.o;
+                    p.y -= p.v;
+                    if(p.y < 0) {
+                        p.y = canvas.height;
+                        p.x = Math.random() * canvas.width;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Add glow effect
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = color;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+                
+                animationId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        function initQuantum() {
+            particles = [];
+            for(let i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: Math.random() * 2 - 1,
+                    vy: Math.random() * 2 - 1,
+                    size: Math.random() * 4 + 1,
+                    color: Math.random() > 0.5 ? '#c400ff' : '#00ccff'
+                });
+            }
+            
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    if(p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    
+                    // Draw particle
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw connection lines
+                    ctx.strokeStyle = p.color;
+                    ctx.globalAlpha = 0.1;
+                    ctx.lineWidth = 1;
+                    
+                    particles.forEach(other => {
+                        const dx = p.x - other.x;
+                        const dy = p.y - other.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if(distance < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(other.x, other.y);
+                            ctx.stroke();
+                        }
+                    });
+                    ctx.globalAlpha = 1;
+                });
+                
+                animationId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        function initMatrix() {
+            const fontSize = 16;
+            const columns = canvas.width / fontSize;
+            const drops = Array(Math.floor(columns)).fill(1);
+            let frame = 0;
+            
+            function loop() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.font = `${fontSize}px monospace`;
+                ctx.fillStyle = '#0F0';
+                
+                for(let i = 0; i < drops.length; i++) {
+                    const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    
+                    if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+                
+                frame++;
+                animationId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        function initSynthwave() {
+            particles = [];
+            for(let i = 0; i < 40; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    v: Math.random() * 0.8 + 0.2,
+                    s: Math.random() * 5 + 2,
+                    color: Math.random() > 0.5 ? '#ff00ff' : '#00ffff'
+                });
+            }
+            
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw gradient background
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, 'rgba(18, 0, 61, 0.8)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw particles
+                particles.forEach(p => {
+                    p.y -= p.v;
+                    if(p.y < -10) {
+                        p.y = canvas.height + 10;
+                        p.x = Math.random() * canvas.width;
+                    }
+                    
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+                
+                animationId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        function initHologram() {
+            particles = [];
+            for(let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: Math.random() * 3 - 1.5,
+                    vy: Math.random() * 3 - 1.5,
+                    size: Math.random() * 2 + 1,
+                    life: 100
+                });
+            }
+            
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw grid
+                ctx.strokeStyle = 'rgba(0, 255, 204, 0.1)';
+                ctx.lineWidth = 1;
+                
+                for(let x = 0; x < canvas.width; x += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                
+                for(let y = 0; y < canvas.height; y += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+                
+                // Draw particles
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life--;
+                    
+                    if(p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    if(p.life <= 0) {
+                        p.x = Math.random() * canvas.width;
+                        p.y = Math.random() * canvas.height;
+                        p.life = 100;
+                    }
+                    
+                    ctx.fillStyle = 'rgba(0, 255, 204, 0.6)';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                animationId = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        // ==========================================
+        // 6. INITIALIZATION
+        // ==========================================
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            setAnimation(curTheme);
+        });
+
+        // Start the application
+        appInit();
+    </script>
+</body>
+</html>
